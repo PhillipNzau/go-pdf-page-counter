@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	filePath := "../Pawawise feature.pdf" // Change this to your PDF file path
+	filePath := "../Pawawise feature.pdf" 
 
 	pageCount, err := pdfutil.GetPDFPageCount(filePath)
 	if err != nil {
