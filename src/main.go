@@ -14,35 +14,43 @@ import (
 const uploadDir = "uploads"
 
 func uploadHandler(c *gin.Context) {
-	file, err := c.FormFile("pdf")
+	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file"})
+		c.JSON(http.StatusBadRequest, gin.H{"status": 400, "error": "Invalid file"})
 		return
 	}
+	log.Println("Received file:", file.Filename)
 
 	// Ensure upload directory exists
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to create upload directory"})
 		return
 	}
 
 	// Save the uploaded file
 	filePath := filepath.Join(uploadDir, file.Filename)
 	if err := c.SaveUploadedFile(file, filePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		log.Println("Error saving file:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to save file"})
 		return
 	}
+
+	log.Println("File saved at:", filePath) 
 
 	// Get PDF page count
 	pageCount, err := pdfutil.GetPDFPageCount(filePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read PDF"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to read PDF"})
 		return
 	}
 
-	// Return JSON response
-	c.JSON(http.StatusOK, gin.H{"pageCount": pageCount})
+	// Return JSON response with status code
+	c.JSON(http.StatusOK, gin.H{
+		"status":    200,
+		"pageCount": pageCount,
+	})
 }
+
 
 func main() {
 	r := gin.Default()
