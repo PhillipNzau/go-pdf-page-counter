@@ -1,5 +1,5 @@
 {
   "functions": {
-    "api/main.go": { "runtime": "go@latest" }
+    "api/main.go": { "runtime": "1.24.1" }
   }
 }
