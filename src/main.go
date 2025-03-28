@@ -14,28 +14,42 @@ import (
 const uploadDir = "uploads"
 
 func uploadHandler(c *gin.Context) {
+
+	// Ensure upload directory exists with full permissions
+	err := os.MkdirAll(uploadDir, 0777)
+	if err != nil {
+		log.Println("Failed to create upload directory:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to create upload directory"})
+		return
+	}
+
+	// Explicitly set permissions in case they're incorrect
+	err = os.Chmod(uploadDir, 0777)
+	if err != nil {
+		log.Println("Failed to set directory permissions:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to set directory permissions"})
+		return
+	}
+
+	// Get file from request
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": 400, "error": "Invalid file"})
 		return
 	}
+
 	log.Println("Received file:", file.Filename)
 
-	// Ensure upload directory exists
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to create upload directory"})
-		return
-	}
-
-	// Save the uploaded file
+	// Save the uploaded file, ensuring it overwrites if exists
 	filePath := filepath.Join(uploadDir, file.Filename)
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
+	err = c.SaveUploadedFile(file, filePath)
+	if err != nil {
 		log.Println("Error saving file:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"status": 500, "error": "Failed to save file"})
 		return
 	}
 
-	log.Println("File saved at:", filePath) 
+	log.Println("File saved at:", filePath)
 
 	// Get PDF page count
 	pageCount, err := pdfutil.GetPDFPageCount(filePath)
@@ -50,6 +64,7 @@ func uploadHandler(c *gin.Context) {
 		"pageCount": pageCount,
 	})
 }
+
 
 
 func main() {
